@@ -110,3 +110,7 @@ resource "aws_autoscaling_group" "pat-asg"{
     propagate_at_launch = true
   }
 }
+
+output "alb_dns_name" {
+  value = "aws_lb.my-aws-alb.dns_name"
+}
