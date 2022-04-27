@@ -59,7 +59,7 @@ resource "aws_lb_target_group" "my_target_group" {
 }
 
 resource  "aws_lb" "my-aws-alb" {
-  name =            "My-terraform-alb"
+  name =            "my-terraform-alb"
   internal =        false
   security_groups = var.vpc_security_group
   subnets =        ["subnet-0bee8832e401ccc6b","subnet-01d1fa65065bf0797"]
