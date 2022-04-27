@@ -1,0 +1,93 @@
+stages:
+  - iac_validate
+  - iac_plan
+  - iac_apply
+  - image
+  - iac_destroy  ##
+
+terraform_validate:
+  stage: iac_validate
+  before_script:
+    - cd terraform-new
+    - terraform init
+  script:
+    - terraform validate
+  tags:
+      - myrunner
+  only: 
+    - development   
+
+terraform_plan:
+  stage: iac_plan
+  before_script:
+    - cd terraform-new
+    - terraform init  
+  script: 
+    - terraform plan --out plan
+  only:
+    refs:
+      - development
+  artifacts:
+    paths:
+      - plan  
+  tags:
+      - myrunner
+
+
+terraform_apply:
+  stage: iac_apply
+  before_script:
+    - cd terraform-new
+    - terraform init  
+  script:
+    - terraform apply --auto-approve 
+  when: manual
+  allow_failure: false
+  only:
+    refs:
+      - development
+  tags:
+      - myrunner 
+
+image_description:
+  stage: image
+  image: ubuntu:20.04
+  script: 
+    - apt-get update -y
+    - apt-get install curl -y
+    - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    - apt-get install zip -y
+    - apt-get install unzip -y 
+    - unzip awscliv2.zip
+    - ./aws/install -i /usr/local/aws-cli -b /usr/local/bin./aws/install -i /usr/local/aws-cli -b /usr/local/bin
+    - aws ec2 describe-snapshots --owner-ids self  --query 'Snapshots[]' --region=ap-south-1
+  only:
+    refs:
+      - development
+  tags:
+      - myrunner 
+
+
+terraform_destroy:
+  image:
+    name: hashicorp/terraform:latest
+    entrypoint:
+      - /usr/bin/env
+      - "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  stage: iac_destroy
+  before_script:
+    - cp ./import.tf ./terraform-new/
+    - cd terraform-new
+    - terraform init 
+    - terraform import aws_ami.packer-ami $AMI
+    - terraform import aws_ebs_snapshot.packer-snap $SNAP 
+  script:
+    - terraform destroy --auto-approve
+  when: manual
+  allow_failure: false
+  only:
+    refs:
+      - development
+  tags:
+      - myrunner      
+ 
